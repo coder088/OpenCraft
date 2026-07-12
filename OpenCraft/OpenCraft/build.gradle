@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'application'
+    id("com.gradleup.shadow") version "9.5.1"
+
+}
+
+group = 'com.voxelgame'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+// Definiamo il sistema operativo corrente per scaricare i nativi corretti automaticamente
+import org.gradle.internal.os.OperatingSystem
+
+project.ext {
+    // Rileva l'OS e l'architettura (es. distingue Mac Intel da Mac M1/M2/M3)
+    def os = OperatingSystem.current()
+    if (os.isWindows()) {
+        lwjglNatives = System.getProperty("os.arch").contains("64") ? "natives-windows" : "natives-windows-x86"
+    } else if (os.isMacOsX()) {
+        lwjglNatives = System.getProperty("os.arch").startsWith("aarch64") ? "natives-macos-arm64" : "natives-macos"
+    } else if (os.isLinux()) {
+        lwjglNatives = System.getProperty("os.arch").startsWith("aarch64") ? "natives-linux-arm64" : "natives-linux"
+    } else {
+        lwjglNatives = "natives-linux"
+    }
+}
+
+dependencies {
+    // 1. Definiamo la piattaforma BOM (Risolve il tuo errore)
+    implementation platform("org.lwjgl:lwjgl-bom:3.4.1")
+
+    // 2. Core di LWJGL e moduli base (Grafica, Input, Finestre)
+    implementation "org.lwjgl:lwjgl"
+    implementation "org.lwjgl:lwjgl-glfw"
+    implementation "org.lwjgl:lwjgl-opengl"
+    implementation 'net.java.dev.jna:jna-platform:5.14.0'
+
+    // 3. Libreria Matematica 3D (JOML)
+    implementation "org.joml:joml:1.10.5"
+
+    // 4. File Nativi (I driver C che si interfacciano con la GPU)
+    runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-opengl::$lwjglNatives"
+    implementation "org.lwjgl:lwjgl-stb"
+    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+}
+
+application {
+    mainClass = 'Main'
+    applicationDefaultJvmArgs = [
+            '--enable-native-access=ALL-UNNAMED',
+            '--add-opens=java.base/java.nio=ALL-UNNAMED'
+    ]
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+// Metti questo blocco in fondo al tuo file build.gradle
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
