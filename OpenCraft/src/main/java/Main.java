@@ -1,6 +1,5 @@
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.*;
-import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.stb.STBImage;
@@ -18,6 +17,7 @@ import static org.lwjgl.opengl.ARBVertexArrayObject.glGenVertexArrays;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL15C.glGenBuffers;
+import static org.lwjgl.opengl.GL20.*;
 
 public class Main {
     private long window;
@@ -39,16 +39,15 @@ public class Main {
     public void run() {
         //init window and opengl
         if (!glfwInit()) {
-            throw new RuntimeException("Errore nel caricamento delle shaders. Il programma si chiuderà");
+            throw new RuntimeException("An error occurred while loading the shaders. The Game will close.");
         }
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);//modern OPENGL
-        // L'icona deve essere presente prima che Windows mostri la finestra nella barra.
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         window = glfwCreateWindow(800, 600, "OpenCraft", 0, 0);
         if (window == org.lwjgl.system.MemoryUtil.NULL) {
-            throw new RuntimeException(" Creazione finestra fallita");
+            throw new RuntimeException(" Window's creation failed");
         }
         setWindowIcon();
         glfwMakeContextCurrent(window); //tells the GPU which window we are using
@@ -86,7 +85,7 @@ public class Main {
 
         //player config
         float[] manicaArray = {
-                // FACCIA FRONTALE
+                // ANTERIOR FACE
                 -0.5f, -0.5f,  0.5f,   0.838f , 0.005f,
                 0.5f, -0.5f,  0.5f,   0.992f , 0.005f,
                 0.5f,  0.5f,  0.5f,   0.992f , 0.995f,
@@ -94,7 +93,7 @@ public class Main {
                 -0.5f,  0.5f,  0.5f,   0.838f , 0.995f,
                 -0.5f, -0.5f,  0.5f,   0.838f , 0.005f,
 
-                // FACCIA POSTERIORE
+                // POSTERIOR FACE
                 0.5f, -0.5f, -0.5f,   0.838f , 0.005f,
                 -0.5f, -0.5f, -0.5f,   0.992f , 0.005f,
                 -0.5f,  0.5f, -0.5f,   0.992f , 0.995f,
@@ -102,7 +101,7 @@ public class Main {
                 0.5f,  0.5f, -0.5f,   0.838f , 0.995f,
                 0.5f, -0.5f, -0.5f,   0.838f , 0.005f,
 
-                // FACCIA SUPERIORE
+                // UPWARDS FACE
                 -0.5f,  0.5f, -0.5f,   0.838f , 0.005f,
                 -0.5f,  0.5f,  0.5f,   0.838f , 0.995f,
                 0.5f,  0.5f,  0.5f,   0.992f , 0.995f,
@@ -110,7 +109,7 @@ public class Main {
                 0.5f,  0.5f, -0.5f,   0.992f , 0.005f,
                 -0.5f,  0.5f, -0.5f,   0.838f , 0.005f,
 
-                // FACCIA INFERIORE
+                //INFERIOR FACE
                 -0.5f, -0.5f,  0.5f,   0.838f , 0.005f,
                 -0.5f, -0.5f, -0.5f,   0.838f , 0.995f,
                 0.5f, -0.5f, -0.5f,   0.992f , 0.995f,
@@ -118,7 +117,7 @@ public class Main {
                 0.5f, -0.5f,  0.5f,   0.992f , 0.005f,
                 -0.5f, -0.5f,  0.5f,   0.838f , 0.005f,
 
-                // FACCIA DESTRA
+                // RIGHT FACE
                 0.5f, -0.5f,  0.5f,   0.838f , 0.005f,
                 0.5f, -0.5f, -0.5f,   0.992f , 0.005f,
                 0.5f,  0.5f, -0.5f,   0.992f , 0.995f,
@@ -126,7 +125,7 @@ public class Main {
                 0.5f,  0.5f,  0.5f,   0.838f , 0.995f,
                 0.5f, -0.5f,  0.5f,   0.838f , 0.005f,
 
-                // FACCIA SINISTRA
+                // LEFT FACE
                 -0.5f, -0.5f, -0.5f,   0.838f , 0.005f,
                 -0.5f, -0.5f,  0.5f,   0.992f , 0.005f,
                 -0.5f,  0.5f,  0.5f,   0.992f , 0.995f,
@@ -135,7 +134,7 @@ public class Main {
                 -0.5f, -0.5f, -0.5f,   0.838f , 0.005f
         };
         float[] manoArray = {
-                // FACCIA FRONTALE
+                // ANTERIOR FACE
                 -0.5f, -0.5f,  0.5f,   0.672f , 0.005f,
                 0.5f, -0.5f,  0.5f,   0.822f , 0.005f,
                 0.5f,  0.5f,  0.5f,   0.822f , 0.995f,
@@ -143,7 +142,7 @@ public class Main {
                 -0.5f,  0.5f,  0.5f,   0.672f , 0.995f,
                 -0.5f, -0.5f,  0.5f,   0.672f , 0.005f,
 
-                // FACCIA POSTERIORE
+                // POSTERIOR FACE
                 0.5f, -0.5f, -0.5f,   0.672f , 0.005f,
                 -0.5f, -0.5f, -0.5f,   0.827f, 0.005f,
                 -0.5f,  0.5f, -0.5f,   0.822f , 0.995f,
@@ -151,7 +150,7 @@ public class Main {
                 0.5f,  0.5f, -0.5f,   0.672f , 0.995f,
                 0.5f, -0.5f, -0.5f,   0.672f , 0.005f,
 
-                // FACCIA SUPERIORE
+                // UPWARDS FACE
                 -0.5f,  0.5f, -0.5f,   0.822f  , 0.005f,
                 -0.5f,  0.5f,  0.5f,   0.822f  , 0.995f,
                 0.5f,  0.5f,  0.5f,   0.822f , 0.995f,
@@ -159,7 +158,7 @@ public class Main {
                 0.5f,  0.5f, -0.5f,   0.822f , 0.005f,
                 -0.5f,  0.5f, -0.5f,   0.672f , 0.005f,
 
-                // FACCIA INFERIORE
+                //INFERIOR FACE
                 -0.5f, -0.5f,  0.5f,   0.672f , 0.005f,
                 -0.5f, -0.5f, -0.5f,   0.672f , 0.995f,
                 0.5f, -0.5f, -0.5f,   0.822f , 0.995f,
@@ -167,7 +166,7 @@ public class Main {
                 0.5f, -0.5f,  0.5f,   0.822f , 0.005f,
                 -0.5f, -0.5f,  0.5f,   0.672f , 0.005f,
 
-                // FACCIA DESTRA
+                // RIGHT FACE
                 0.5f, -0.5f,  0.5f,   0.672f , 0.005f,
                 0.5f, -0.5f, -0.5f,   0.822f , 0.005f,
                 0.5f,  0.5f, -0.5f,   0.822f , 0.995f,
@@ -175,7 +174,7 @@ public class Main {
                 0.5f,  0.5f,  0.5f,   0.672f , 0.995f,
                 0.5f, -0.5f,  0.5f,   0.672f , 0.005f,
 
-                // FACCIA SINISTRA
+                // LEFT FACE
                 -0.5f, -0.5f, -0.5f,   0.672f , 0.005f,
                 -0.5f, -0.5f,  0.5f,   0.822f , 0.005f,
                 -0.5f,  0.5f,  0.5f,   0.822f , 0.995f,
@@ -188,36 +187,36 @@ public class Main {
         int modelLoc = org.lwjgl.opengl.GL20.glGetUniformLocation(shader.programID, "model");
         int viewLoc = org.lwjgl.opengl.GL20.glGetUniformLocation(shader.programID, "view");
         int projLoc = org.lwjgl.opengl.GL20.glGetUniformLocation(shader.programID, "projection");
-        java.nio.FloatBuffer manicaBuffer = MemoryUtil.memAllocFloat(manicaArray.length);
-        manicaBuffer.put(manicaArray).flip();
-        java.nio.FloatBuffer manoBuffer = MemoryUtil.memAllocFloat(manoArray.length);
-        manoBuffer.put(manoArray).flip();
+        java.nio.FloatBuffer sleaveBuffer = MemoryUtil.memAllocFloat(manicaArray.length);
+        sleaveBuffer.put(manicaArray).flip();
+        java.nio.FloatBuffer handBuffer = MemoryUtil.memAllocFloat(manoArray.length);
+        handBuffer.put(manoArray).flip();
         byte stride = 5 * Float.BYTES;
-        int manicavaoID = glGenVertexArrays();
-         glBindVertexArray(manicavaoID);
-        int manicaVBOID =glGenBuffers();
-        org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, manicaVBOID);
-        glBufferData(GL_ARRAY_BUFFER,manicaBuffer,GL_STATIC_DRAW);
-        org.lwjgl.opengl.GL20.glVertexAttribPointer(0, 3, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 0);
-        org.lwjgl.opengl.GL20.glEnableVertexAttribArray(0);
-        org.lwjgl.opengl.GL20.glVertexAttribPointer(1, 2, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 3 * Float.BYTES);
-        org.lwjgl.opengl.GL20.glEnableVertexAttribArray(1);
+        int sleaveVaoID = glGenVertexArrays();
+         glBindVertexArray(sleaveVaoID);
+        int sleaveVBOID =glGenBuffers();
+        org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, sleaveVBOID);
+        glBufferData(GL_ARRAY_BUFFER,sleaveBuffer,GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 3 * Float.BYTES);
+        glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-        org.lwjgl.system.MemoryUtil.memFree(manicaBuffer);
+        org.lwjgl.system.MemoryUtil.memFree(sleaveBuffer);
 
-        int manovaoID = glGenVertexArrays();
-        glBindVertexArray(manovaoID);
-        int manoVBOID =glGenBuffers();
-        org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, manoVBOID);
-        glBufferData(GL_ARRAY_BUFFER,manoBuffer,GL_STATIC_DRAW);
-        org.lwjgl.opengl.GL20.glVertexAttribPointer(0, 3, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 0);
-        org.lwjgl.opengl.GL20.glEnableVertexAttribArray(0);
-        org.lwjgl.opengl.GL20.glVertexAttribPointer(1, 2, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 3 * Float.BYTES);
-        org.lwjgl.opengl.GL20.glEnableVertexAttribArray(1);
+        int handVaoID = glGenVertexArrays();
+        glBindVertexArray(handVaoID);
+        int handVBOID =glGenBuffers();
+        glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, handVBOID);
+        glBufferData(GL_ARRAY_BUFFER,handBuffer,GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3,GL_FLOAT, false, stride, 0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 3 * Float.BYTES);
+        glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-        org.lwjgl.system.MemoryUtil.memFree(manoBuffer);
+        MemoryUtil.memFree(handBuffer);
 
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -252,20 +251,15 @@ public class Main {
             //configure matrixes
             modelMatrix.identity(); //the ground is NOT moving
             viewMatrix = player.getViewMatrix(); //gets the player cam
-            projectionMatrix.identity().perspective((float) Math.toRadians(60.0f), 800.0f / 600.0f, 0.2f, 150.0f); // Alzato a 0.2f e aumentata la distanza a 150
-
-
-
-
-
+            projectionMatrix.identity().perspective((float) Math.toRadians(60.0f), 800.0f / 600.0f, 0.2f, 150.0f);
 
             //sends the matrixes to the GPU trough a buffer
             modelMatrix.get(0, matrixBuffer);
-            org.lwjgl.opengl.GL20.glUniformMatrix4fv(modelLoc, false, matrixBuffer);
+            glUniformMatrix4fv(modelLoc, false, matrixBuffer);
             viewMatrix.get(0, matrixBuffer);
-            org.lwjgl.opengl.GL20.glUniformMatrix4fv(viewLoc, false, matrixBuffer);
+            glUniformMatrix4fv(viewLoc, false, matrixBuffer);
             projectionMatrix.get(0, matrixBuffer);
-            org.lwjgl.opengl.GL20.glUniformMatrix4fv(projLoc, false, matrixBuffer);
+            glUniformMatrix4fv(projLoc, false, matrixBuffer);
 
             world.render();
             modelMatrix.identity()
@@ -275,15 +269,15 @@ public class Main {
                                                .translate(0.4f,-0.4f,-0.6f)
                                                      .scale(0.15f,0.15f,0.5f);
             modelMatrix.get(0, matrixBuffer);
-            org.lwjgl.opengl.GL20.glUniformMatrix4fv(modelLoc, false, matrixBuffer);
-            glBindVertexArray(manicavaoID);
+            glUniformMatrix4fv(modelLoc, false, matrixBuffer);
+            glBindVertexArray(sleaveVaoID);
             glDrawArrays(GL_TRIANGLES,0,36);
             glBindVertexArray(0);
             modelMatrix.translate(0.0f,0.0f,-0.6f)
                           .scale(0.85f,0.85f,0.3f);
             modelMatrix.get(0, matrixBuffer);
-            org.lwjgl.opengl.GL20.glUniformMatrix4fv(modelLoc, false, matrixBuffer);
-            glBindVertexArray(manovaoID);
+            glUniformMatrix4fv(modelLoc, false, matrixBuffer);
+            glBindVertexArray(handVaoID);
             glDrawArrays(GL_TRIANGLES,0,36);
             glBindVertexArray(0);
             shader.unbind();
@@ -297,19 +291,19 @@ public class Main {
         saveExecutor.shutdown();
         try {
             if (!saveExecutor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)) {
-                System.err.println("Alcuni salvataggi non sono terminati entro 10 secondi.");
+                System.err.println("The saving process took too long.");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         }
 
-    /** Imposta l'icona della finestra usando l'immagine inclusa nelle risorse dell'applicazione. */
+    /**Sets the application icon using the image inside the project. */
     private void setWindowIcon() {
         try (InputStream input = Main.class.getResourceAsStream("/image.png");
              MemoryStack stack = MemoryStack.stackPush()) {
             if (input == null) {
-                throw new IllegalStateException("Risorsa image.png non trovata.");
+                throw new IllegalStateException("Resource image.png not found.");
             }
 
             byte[] imageBytes = input.readAllBytes();
@@ -322,7 +316,7 @@ public class Main {
                 IntBuffer channels = stack.mallocInt(1);
                 ByteBuffer pixels = STBImage.stbi_load_from_memory(encodedImage, width, height, channels, 4);
                 if (pixels == null) {
-                    throw new IllegalStateException("Impossibile caricare image.png: " + STBImage.stbi_failure_reason());
+                    throw new IllegalStateException("Impossible to load image.png: " + STBImage.stbi_failure_reason());
                 }
 
                 try (GLFWImage.Buffer icon = GLFWImage.malloc(1)) {
@@ -335,7 +329,7 @@ public class Main {
                 MemoryUtil.memFree(encodedImage);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Impossibile leggere image.png.", e);
+            throw new RuntimeException("Impossible to read image.png.", e);
         }
     }
 }

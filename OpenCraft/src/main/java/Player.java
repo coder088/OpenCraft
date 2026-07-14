@@ -1,3 +1,4 @@
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
 
@@ -8,12 +9,12 @@ public class Player {
     private Vector3f forward;
     private Vector3f up;
     private float speed;
-    private float yaw = -90.0f; // -90 gradi fa in modo che guardi dritto in avanti (verso l'asse Z negativo)
-    private float pitch = 0.0f;  // Sguardo livellato all'orizzonte
-    private double lastMouseX = 400.0; // Valori iniziali approssimativi (centro di una finestra 800x600)
+    private float yaw = -90.0f;
+    private float pitch = 0.0f;
+    private double lastMouseX = 400.0;
     private double lastMouseY = 300.0;
-    public boolean firstMouse = true; // Evita uno scatto violento al primissimo frame
-    private float mouseSensitivity = 0.1f; // Regola la sensibilità del mouse
+    public boolean firstMouse = true;
+    private float mouseSensitivity = 0.1f;
     public boolean isCursorDisabled = false;
     private float hitboxHeight = 1.8f;
     private float hitboxWidth = 0.6f;
@@ -27,15 +28,15 @@ public class Player {
     public Vector3f getPosition(){return position;}
 
     public Player(float startX, float startY, float startZ) {
-        this.position = new org.joml.Vector3f(startX, startY, startZ);
-        this.forward = new org.joml.Vector3f().normalize();
-        this.up = new org.joml.Vector3f(0.0f, 1.0f, 0.0f);
+        this.position = new Vector3f(startX, startY, startZ);
+        this.forward = new Vector3f().normalize();
+        this.up = new Vector3f(0.0f, 1.0f, 0.0f);
         this.speed = 6.0f;
         this.yaw = -90.0f;
         this.pitch = 0.0f;
 
-// Calcoliamo il vettore forward iniziale per non partire con la telecamera cieca
-        org.joml.Vector3f direction = new org.joml.Vector3f();
+// load the initial forward vector to allow the camera to see
+        Vector3f direction = new Vector3f();
         direction.x = (float) (Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)));
         direction.y = (float) Math.sin(Math.toRadians(pitch));
         direction.z = (float) (Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)));
@@ -43,100 +44,100 @@ public class Player {
 
     }
     public void handleInput(long window, float deltaTime,World world) {
-        float spazio = speed * deltaTime;
-        float spostamentoX = 0.0f;
-        float spostamentoZ = 0.0f;
+        float space = speed * deltaTime;
+        float displacementX = 0.0f;
+        float displacementZ = 0.0f;
 
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            Vector3f spostamento = new Vector3f(this.forward).mul(spazio);
-            spostamento.y = 0.0f;
-            if (spostamento.lengthSquared() > 0) {
-                spostamento.normalize().mul(spazio);
+            Vector3f displacement = new Vector3f(this.forward).mul(space);
+            displacement.y = 0.0f;
+            if (displacement.lengthSquared() > 0) {
+                displacement.normalize().mul(space);
             }
-                spostamentoX += spostamento.x;
-                spostamentoZ += spostamento.z;
+                displacementX += displacement.x;
+                displacementZ += displacement.z;
 
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            Vector3f spostamento = new Vector3f(this.forward).mul(spazio);
-            spostamento.y = 0.0f;
-            if (spostamento.lengthSquared() > 0) {
-                spostamento.normalize().mul(spazio);
+            Vector3f displacement = new Vector3f(this.forward).mul(space);
+            displacement.y = 0.0f;
+            if (displacement.lengthSquared() > 0) {
+                displacement.normalize().mul(space);
             }
-            spostamentoX -= spostamento.x;
-            spostamentoZ -= spostamento.z;
+            displacementX -= displacement.x;
+            displacementZ -= displacement.z;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            org.joml.Vector3f dirLaterale = new org.joml.Vector3f();
-            this.forward.cross(this.up, dirLaterale);
-            dirLaterale.y = 0.0f;
-            if (dirLaterale.lengthSquared() > 0) {
-                dirLaterale.normalize().mul(spazio);
+            Vector3f lateralDir = new org.joml.Vector3f();
+            this.forward.cross(this.up, lateralDir);
+            lateralDir.y = 0.0f;
+            if (lateralDir.lengthSquared() > 0) {
+                lateralDir.normalize().mul(space);
             }
-            spostamentoX -= dirLaterale.x;
-            spostamentoZ -= dirLaterale.z;
+            displacementX -= lateralDir.x;
+            displacementZ -= lateralDir.z;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            org.joml.Vector3f dirLaterale = new org.joml.Vector3f();
-            this.forward.cross(this.up, dirLaterale);
-            dirLaterale.y = 0.0f;
-            if (dirLaterale.lengthSquared() > 0) {
-                dirLaterale.normalize().mul(spazio);
+            org.joml.Vector3f lateralDir = new org.joml.Vector3f();
+            this.forward.cross(this.up, lateralDir);
+            lateralDir.y = 0.0f;
+            if (lateralDir.lengthSquared() > 0) {
+                lateralDir.normalize().mul(space);
             }
-            spostamentoX += dirLaterale.x;
-            spostamentoZ += dirLaterale.z;
+            displacementX += lateralDir.x;
+            displacementZ += lateralDir.z;
         }
 
 
-        // Trova il blocco intero in cui si trovano i piedi del giocatore
+        //finds the first solid block where the player is
         int startX;
         int endX ;
         int startY ;
         int endY ;
         int startZ;
         int endZ;
-        float nuovaX = this.position.x + spostamentoX;
-        startX = (int)Math.floor(nuovaX) -1;
-        endX = (int)Math.floor(nuovaX) +1;
+        float newX = this.position.x + displacementX;
+        startX = (int)Math.floor(newX) -1;
+        endX = (int)Math.floor(newX) +1;
          startY = (int) Math.floor(this.position.y) - 1;
-         endY   = (int) Math.floor(this.position.y) + 2; // Arriviamo a +2 perché il giocatore è alto 1.8 blocchi
+         endY   = (int) Math.floor(this.position.y) + 2; // +2 since the player's height is 1.8 blocks
          startZ = (int) Math.floor(this.position.z) - 1;
          endZ   = (int) Math.floor(this.position.z) + 1;
-        AABB hitboxVirtualeX = gethitboxAt(nuovaX,this.position.y,this.position.z);
-        boolean collisioneX = false;
+        AABB hitboxVirtualeX = gethitboxAt(newX,this.position.y,this.position.z);
+        boolean collisionX = false;
         for(int bx = startX; bx <= endX; bx++){
             for(int by = startY; by <= endY; by++){
                 for(int bz = startZ; bz <= endZ; bz++){
                     if(world.getBlockAt(bx,by,bz) != 0){
-                        AABB hitboxBlocco = new AABB(bx,by,bz, bx+1,by+1,bz+1);
-                        if(hitboxVirtualeX.intersects(hitboxBlocco)){
-                            collisioneX = true;
+                        AABB blockHitbox = new AABB(bx,by,bz, bx+1,by+1,bz+1);
+                        if(hitboxVirtualeX.intersects(blockHitbox)){
+                            collisionX = true;
                             break;
                         }
                     }
                 }
             }
         }
-        if(!collisioneX){
-            this.position.x = nuovaX;
+        if(!collisionX){
+            this.position.x = newX;
         }
-        float nuovaZ = this.position.z  + spostamentoZ;
+        float newZ = this.position.z  + displacementZ;
         startX = (int)Math.floor(this.position.x) -1;
         endX = (int)Math.floor(this.position.x) +1;
         startY = (int) Math.floor(this.position.y) - 1;
-        endY   = (int) Math.floor(this.position.y) + 2; // Arriviamo a +2 perché il giocatore è alto 1.8 blocchi
-        startZ = (int) Math.floor(nuovaZ) - 1;
-        endZ   = (int) Math.floor(nuovaZ) + 1;
-        AABB hitboxVirtualeZ = gethitboxAt(this.position.x,this.position.y,nuovaZ);
-        boolean collisioneZ = false;
+        endY   = (int) Math.floor(this.position.y) + 2; // +2 since the player's height is 1.8 blocks
+        startZ = (int) Math.floor(newZ) - 1;
+        endZ   = (int) Math.floor(newZ) + 1;
+        AABB hitboxVirtualeZ = gethitboxAt(this.position.x,this.position.y,newZ);
+        boolean collisionZ = false;
         for(int bx = startX; bx <= endX; bx++){
             for(int by = startY; by <= endY; by++){
                 for(int bz = startZ; bz <= endZ; bz++){
                     if(world.getBlockAt(bx,by,bz)!=0){
-                        AABB hitboxBlocco = new AABB(bx,by,bz,bx+1,by+1,bz+1);
-                        if(hitboxVirtualeZ.intersects(hitboxBlocco)){
-                            collisioneZ = true;
+                        AABB blockHitbox = new AABB(bx,by,bz,bx+1,by+1,bz+1);
+                        if(hitboxVirtualeZ.intersects(blockHitbox)){
+                            collisionZ = true;
                             break;
                         }
                     }
@@ -144,53 +145,52 @@ public class Player {
                 }
             }
         }
-        if(!collisioneZ){
-            this.position.z = nuovaZ;
+        if(!collisionZ){
+            this.position.z = newZ;
         }
 
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && isGrounded) {
-            this.velocityY = 5.0f; // Dai una spinta verso l'alto
-            this.isGrounded = false; // Non sei più a terra
+            this.velocityY = 5.0f;
+            this.isGrounded = false;
         }
-        // Applica la gravità permanente per spingere la velocità verso il basso
+        // Permanent gravity
         this.velocityY -= 9.8f * deltaTime;
-        // Ricalcola lo spostamento di questo frame in base alla velocità aggiornata
-        float spostamentoY = this.velocityY * deltaTime;
+        float displacementY = this.velocityY * deltaTime;
 
-        float nuovaY = this.position.y + spostamentoY;
+        float newY = this.position.y + displacementY;
         startX = (int)Math.floor(this.position.x) -1;
         endX = (int)Math.floor(this.position.x) +1;
-        startY = (int) Math.floor(nuovaY) - 1;
-        endY   = (int) Math.floor(nuovaY) + 2; // Arriviamo a +2 perché il giocatore è alto 1.8 blocchi
+        startY = (int) Math.floor(newY) - 1;
+        endY   = (int) Math.floor(newY) + 2;
         startZ = (int) Math.floor(this.position.z) - 1;
         endZ   = (int) Math.floor(this.position.z) + 1;
-        AABB hitboxVirtualeY = gethitboxAt(this.position.x,nuovaY - 0.005f,this.position.z);
-        boolean collisioneY = false;
-        float altezzaBloccoToccato = 0.0f;
+        AABB VirtualHitboxY = gethitboxAt(this.position.x,newY - 0.005f,this.position.z);
+        boolean collisionY = false;
+        float tuchedBlockHeight = 0.0f;
         for(int bx = startX; bx <= endX; bx++){
             for(int by = startY; by <= endY; by++){
                 for(int bz = startZ; bz <= endZ; bz++){
                     if(world.getBlockAt(bx,by,bz)!= 0){
                         AABB hitboxBlocco = new AABB(bx,by,bz,bx+1,by+1,bz+1);
-                        if(hitboxVirtualeY.intersects(hitboxBlocco)){
-                            collisioneY = true;
-                            altezzaBloccoToccato = by+1f;
+                        if(VirtualHitboxY.intersects(hitboxBlocco)){
+                            collisionY = true;
+                            tuchedBlockHeight = by+1f;
                             break;
                         }
                     }
                 }
             }
         }
-        if(collisioneY){
-            if(spostamentoY <=0){
-                this.position.y = altezzaBloccoToccato + 0.001f;
+        if(collisionY){
+            if(displacementY <=0){
+                this.position.y = tuchedBlockHeight + 0.001f;
                 this.velocityY = 0.0f;
                 this.isGrounded = true;
             }
         }
         else{
-            this.position.y = nuovaY;
+            this.position.y = newY;
             this.isGrounded = false;
 
         }
@@ -205,27 +205,19 @@ public class Player {
         leftMouseWasPressed = leftMouseIsPressedNow;
     }
 
-    public org.joml.Matrix4f getViewMatrix() {
-        //Istanziamo una nuova matrice vuota che restituiremo al Main
-        org.joml.Matrix4f viewMatrix = new org.joml.Matrix4f();
-
-        //Calcoliamo la posizione esatta degli occhi (Piedi + Altezza Occhi)
-        org.joml.Vector3f posizioneOcchi = new org.joml.Vector3f(
+    public Matrix4f getViewMatrix() {
+        Matrix4f viewMatrix = new Matrix4f();
+        Vector3f eyePosition = new Vector3f(
                 this.position.x,
                 this.position.y + this.eyeHeight,
                 this.position.z
         );
-
-        // Calcoliamo il punto bersaglio (Target) verso cui guardare.
-        // Il mirino si trova facendo: posizione degli occhi + la direzione dello sguardo (forward)
-        org.joml.Vector3f target = new org.joml.Vector3f();
-        posizioneOcchi.add(this.forward, target);
-
-        //Configuriamo la matrice usando la funzione lookAt
+        Vector3f target = new Vector3f();
+        eyePosition.add(this.forward, target);
         viewMatrix.identity().lookAt(
-                posizioneOcchi.x, posizioneOcchi.y, posizioneOcchi.z, // Posizione della telecamera (Occhi)
-                target.x,         target.y,         target.z,         // Punto mirato nello spazio
-                this.up.x,        this.up.y,        this.up.z         // Vettore del cielo
+                eyePosition.x, eyePosition.y, eyePosition.z, // Camera position(eyes)
+                target.x,         target.y,         target.z,         // target
+                this.up.x,        this.up.y,        this.up.z         // Vector pointing upwards
         );
 
         return viewMatrix;
@@ -237,26 +229,24 @@ public class Player {
             lastMouseY = ypos;
             firstMouse = false;
         }
-        // 1. Calcola lo spostamento del mouse rispetto al frame precedente
+        //Finds the mouse's offset
         float xoffset = (float) (xpos - lastMouseX);
-        float yoffset = (float) (lastMouseY - ypos); // Invertito: le coordinate Y di GLFW vanno dall'alto verso il basso
+        float yoffset = (float) (lastMouseY - ypos);
         lastMouseX = xpos;
         lastMouseY = ypos;
-        // 2. Applica la sensibilità
+        // applies sensitivity
         xoffset *= mouseSensitivity;
         yoffset *= mouseSensitivity;
-        // 3. Aggiorna gli angoli
+        //updates angles
         yaw += xoffset;
         pitch += yoffset;
-        // 4. Blocca il pitch per non spezzarsi il collo virtuale
+        //checks if the player is going to go over a 90 deg angle upwards
         if (pitch > 89.0f)  pitch = 89.0f;
         if (pitch < -89.0f) pitch = -89.0f;
-        // 5. Algoritmo trigonometrico per ricostruire il vettore di direzione dello sguardo
-        org.joml.Vector3f direction = new org.joml.Vector3f();
+        Vector3f direction = new Vector3f();
         direction.x = (float) (Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)));
         direction.y = (float) Math.sin(Math.toRadians(pitch));
         direction.z = (float) (Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)));
-        // Assegna il risultato normalizzato al nostro vettore forward
         this.forward = direction.normalize();
     }
 
@@ -271,30 +261,26 @@ public class Player {
     }
 
     public AABB getHitbox(){
-        float raggio = getHitboxWidth()/2;
-        float altezza = getHitboxHeight();
+        float radius = getHitboxWidth()/2;
+        float height = getHitboxHeight();
         return new AABB(
-                this.position.x - raggio,  this.position.y,           this.position.z - raggio,
-                this.position.x + raggio, this.position.y + altezza, this.position.z + raggio);
+                this.position.x - radius,  this.position.y,           this.position.z - radius,
+                this.position.x + radius, this.position.y + height, this.position.z + radius);
     }
     public AABB gethitboxAt(float x, float y, float z) {
-        float raggio = 0.3f; // Larghezza totale del giocatore (0.6f) divisa per 2
-        float altezza = 1.8f; // Altezza totale del corpo del giocatore
+        float radius = 0.3f; // total player width /2
+        float height = 1.8f; // total player height
+        float minX = x - radius;
+        float minY = y;
+        float minZ = z - radius;
 
-        // Calcoliamo i 6 confini della scatola partendo dalle coordinate (x, y, z) che gli passiamo
-        float minX = x - raggio;
-        float minY = y; // Ricorda: la Y rappresenta sempre i piedi del giocatore
-        float minZ = z - raggio;
-
-        float maxX = x + raggio;
-        float maxY = y + altezza;
-        float maxZ = z + raggio;
-
-        // Restituiamo una nuova scatola AABB pronta per fare i test di scontro
+        float maxX = x + radius;
+        float maxY = y + height;
+        float maxZ = z + radius;
         return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
-    public org.joml.Vector3i rayCasting(World world) {
+    public Vector3i rayCasting(World world) {
         Vector3f rayPos = new Vector3f(
                 this.position.x,
                 this.position.y + this.eyeHeight,

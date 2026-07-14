@@ -1,9 +1,18 @@
 import java.io.*;
+import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 
 import static org.lwjgl.opengl.GL15.glDeleteBuffers;
+import static org.lwjgl.opengl.GL15C.*;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
+import static org.lwjgl.opengl.GL30C.glBindVertexArray;
+import static org.lwjgl.opengl.GL30C.glGenVertexArrays;
+import static org.lwjgl.system.MemoryUtil.memAllocFloat;
+import static org.lwjgl.system.MemoryUtil.memFree;
 
 public class Chunk {
     public int chunkX;
@@ -15,8 +24,6 @@ public class Chunk {
     private static final int CHUNK_HEIGHT = 64;
     private static final int CHUNK_LENGTH = 16;
     private static final int CHUNK_DATA_SIZE = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_LENGTH;
-
-    // L'array tridimensionale che contiene gli ID dei blocchi
     private byte[][][] blocks;
     private boolean dirty;
     private boolean saveQueued;
@@ -29,13 +36,13 @@ public class Chunk {
         this.blocks = new byte[CHUNK_WIDTH][CHUNK_HEIGHT][CHUNK_LENGTH];
         File file = getSaveFile();
         if (file.exists() && file.length() == CHUNK_DATA_SIZE) {
-            try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+            try (FileInputStream fis = new FileInputStream(file)) {
                 for (int x = 0; x < CHUNK_WIDTH; x++) {
                     for (int y = 0; y < CHUNK_HEIGHT; y++) {
                         for (int z = 0; z < CHUNK_LENGTH; z++) {
                             int data = fis.read();
                             if (data == -1) {
-                                throw new java.io.IOException("File incompleto!");
+                                throw new java.io.IOException("Incompleate file!");
                             }
                             this.blocks[x][y][z] = (byte) data;
                         }
@@ -43,21 +50,21 @@ public class Chunk {
                 }
             }
             catch (IOException e) {
-                System.out.println("Salvataggio corrotto per il chunk " + chunkX + "," + chunkZ + ". Genero nuovo terreno...");
+                System.out.println("corrupted save file for chunk " + chunkX + "," + chunkZ + ". Loading new terrain...");
                 for (int x = 0; x < CHUNK_WIDTH; x++) {
                     for (int z = 0; z < CHUNK_LENGTH; z++) {
-                        int altezzaSuperficie;
+                        int surfaceHeight;
                         int worldX = chunkX * 16 + x;
                         int worldZ = chunkZ * 16 + z;
-                        float valoreNoise = world.getNoiseAt(worldX, worldZ);
-                        altezzaSuperficie = 20 + (int) (valoreNoise * 15f);
+                        float noiseValue = world.getNoiseAt(worldX, worldZ);
+                        surfaceHeight = 20 + (int) (noiseValue * 15f);
                         for (int y = 0; y < CHUNK_HEIGHT; y++) {
-                            if (y == altezzaSuperficie) {
-                                blocks[x][y][z] = 1; // Solo l'ULTIMO blocco in cima è ERBA
-                            } else if (y < altezzaSuperficie) {
-                                blocks[x][y][z] = 2; // Tutto ciò che sta sotto (da 0 a 9) è ROCCIA
+                            if (y == surfaceHeight) {
+                                blocks[x][y][z] = 1; //Only the first block is grass
+                            } else if (y < surfaceHeight) {
+                                blocks[x][y][z] = 2; //below is rock
                             } else {
-                                blocks[x][y][z] = 0; // Tutto ciò che sta sopra è ARIA
+                                blocks[x][y][z] = 0; //above its air
                             }
                         }
                     }
@@ -72,54 +79,46 @@ public class Chunk {
                     int altezzaSuperficie;
                     int worldX = chunkX * 16 + x;
                     int worldZ = chunkZ * 16 + z;
-                    float valoreNoise = world.getNoiseAt(worldX, worldZ);
-                    altezzaSuperficie = 20 + (int) (valoreNoise * 15f);
+                    float noiseValue = world.getNoiseAt(worldX, worldZ);
+                    altezzaSuperficie = 20 + (int) (noiseValue * 15f);
                     for (int y = 0; y < CHUNK_HEIGHT; y++) {
                         if (y == altezzaSuperficie) {
-                            blocks[x][y][z] = 1; // Solo l'ULTIMO blocco in cima è ERBA
+                            blocks[x][y][z] = 1;
                         } else if (y < altezzaSuperficie) {
-                            blocks[x][y][z] = 2; // Tutto ciò che sta sotto (da 0 a 9) è ROCCIA
+                            blocks[x][y][z] = 2;
                         } else {
-                            blocks[x][y][z] = 0; // Tutto ciò che sta sopra è ARIA
+                            blocks[x][y][z] = 0;
                         }
                     }
                 }
             }
-            // Ripara automaticamente i file vecchi/incompleti al primo salvataggio.
             dirty = file.exists();
         }
     }
 
 
     public void generateMesh(World world) {
-        // Una rigenerazione sostituisce la vecchia mesh: senza questa pulizia ogni
-        // aggiornamento lascia VAO e VBO nella VRAM fino al crash del driver.
         cleanup();
+        ArrayList<Float> vertexData = new ArrayList<>();
 
-        // Lista dinamica per accumulare i float (5 per vertice: X, Y, Z, U, V)
-        java.util.ArrayList<Float> vertexData = new java.util.ArrayList<>();
-
-        // Scansioniamo l'intero volume 3D del Chunk (X, Y, Z)
+     //cheks the entire chunk volume
         for (int x = 0; x < CHUNK_WIDTH; x++) {
             for (int y = 0; y < CHUNK_HEIGHT; y++) {
                 for (int z = 0; z < CHUNK_LENGTH; z++) {
 
                     byte blockType = blocks[x][y][z];
-                    if (blockType == 0) continue; // Se è ARIA (0), salta il blocco
-
-                    // Coordinate assolute nel mondo 3D per questo specifico blocco
+                    if (blockType == 0) continue; //if its air we skip
+                    //world's coords for that specific block
                     float worldX = (this.chunkX * 16) + x;
                     float worldY = y;
                     float worldZ = (this.chunkZ * 16) + z;
 
-                    // Margine di sicurezza anti-sfarfallio (Texture Bleeding)
+                    //takes care of texture bleading
                     float epsilon = 0.005f;
                     float vMin = 0.0f + epsilon;
                     float vMax = 1.0f - epsilon;
 
-                    // =========================================================================
-                    // 1. FACCIA SUPERIORE (Guarda verso l'alto: Asse Y+)
-                    // =========================================================================
+
                     if (y == CHUNK_HEIGHT - 1 || blocks[x][y + 1][z] == 0) {
                         float topUMin, topUMax;
                         if (blockType == 1) {
@@ -139,9 +138,7 @@ public class Chunk {
                         addVertex(vertexData, worldX,        worldY + 1.0f, worldZ,        topUMin, vMin);
                     }
 
-                    // =========================================================================
-                    // 2. FACCIA INFERIORE (Guarda verso il basso: Asse Y-)
-                    // =========================================================================
+
                     if (y == 0 || blocks[x][y - 1][z] == 0) {
                         float bottomUMin, bottomUMax;
                         if (blockType == 1) {
@@ -163,21 +160,18 @@ public class Chunk {
                         addVertex(vertexData, worldX,        worldY,        worldZ,        bottomUMin, vMin);
                     }
 
-                    // =========================================================================
-                    // COORDENATE PER I LATI TEMPORANEE (Dichiarate al volo fuori per pulizia)
-                    // =========================================================================
+
                     float sideUMin, sideUMax;
                     if (blockType == 1) {
-                        // Erba sui lati -> Slot 2: Terra con Erba (0.50f a 0.75f)
+
                         sideUMin = 0.335f  + epsilon;
                         sideUMax = 0.495f - epsilon;
                     } else {
-                        // Roccia sui lati -> Slot 1: Roccia (0.25f a 0.50f)
+
                         sideUMin = 0.169f  + epsilon;
                         sideUMax = 0.329f - epsilon;
                     }
 
-                    // 3. FACCIA FRONTALE (Guarda verso Z+)
                     if (world.getBlockAt(worldX, worldY, worldZ + 1.0f) == 0) {
                         addVertex(vertexData, worldX,        worldY,        worldZ + 1.0f, sideUMin, vMin);
                         addVertex(vertexData, worldX + 1.0f, worldY,        worldZ + 1.0f, sideUMax, vMin);
@@ -188,7 +182,6 @@ public class Chunk {
                         addVertex(vertexData, worldX,        worldY,        worldZ + 1.0f, sideUMin, vMin);
                     }
 
-                    // 4. FACCIA DESTRA (Guarda verso X+)
                     if (world.getBlockAt(worldX + 1.0f, worldY, worldZ) == 0) {
                         addVertex(vertexData, worldX + 1.0f, worldY,        worldZ + 1.0f, sideUMin, vMin);
                         addVertex(vertexData, worldX + 1.0f, worldY,        worldZ,        sideUMax, vMin);
@@ -199,7 +192,6 @@ public class Chunk {
                         addVertex(vertexData, worldX + 1.0f, worldY,        worldZ + 1.0f, sideUMin, vMin);
                     }
 
-                    // 5. FACCIA DIETRO (Guarda verso Z-)
                     if (world.getBlockAt(worldX, worldY, worldZ - 1.0f) == 0) {
                         addVertex(vertexData, worldX + 1.0f, worldY,        worldZ,        sideUMin, vMin);
                         addVertex(vertexData, worldX,        worldY,        worldZ,        sideUMax, vMin);
@@ -210,7 +202,6 @@ public class Chunk {
                         addVertex(vertexData, worldX + 1.0f, worldY,        worldZ,        sideUMin, vMin);
                     }
 
-                    // 6. FACCIA SINISTRA (Guarda verso X-)
                     if (world.getBlockAt(worldX - 1.0f, worldY, worldZ) == 0) {
                         addVertex(vertexData, worldX,        worldY,        worldZ,        sideUMin, vMin);
                         addVertex(vertexData, worldX,        worldY,        worldZ + 1.0f, sideUMax, vMin);
@@ -223,47 +214,36 @@ public class Chunk {
                 }
             }
         }
-
-        // Calcoliamo quanti vertici totali abbiamo registrato (5 float per ogni vertice)
         this.vertexCount = vertexData.size() / 5;
-
-        // Convertiamo la ArrayList in un array di float classico
         float[] finalVertices = new float[vertexData.size()];
         for (int i = 0; i < vertexData.size(); i++) {
             finalVertices[i] = vertexData.get(i);
         }
 
-        // Carichiamo la mesh sulla GPU
-        java.nio.FloatBuffer vertexBuffer = org.lwjgl.system.MemoryUtil.memAllocFloat(finalVertices.length);
+
+        FloatBuffer vertexBuffer = memAllocFloat(finalVertices.length);
         vertexBuffer.put(finalVertices).flip();
 
-        this.vaoID = org.lwjgl.opengl.GL30.glGenVertexArrays();
-        org.lwjgl.opengl.GL30.glBindVertexArray(this.vaoID);
+        this.vaoID = glGenVertexArrays();
+        glBindVertexArray(this.vaoID);
 
-        this.vboID = org.lwjgl.opengl.GL15.glGenBuffers();
-        org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, this.vboID);
-        org.lwjgl.opengl.GL15.glBufferData(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, vertexBuffer, org.lwjgl.opengl.GL15.GL_STATIC_DRAW);
-
-        // Configurazione dei puntatori del VAO (Ogni blocco occupa 20 byte)
+        this.vboID =glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, this.vboID);
+       glBufferData(GL_ARRAY_BUFFER, vertexBuffer,GL_STATIC_DRAW);
         int stride = 5 * Float.BYTES;
 
-        // Strada 0: Posizione (X, Y, Z)
-        org.lwjgl.opengl.GL20.glVertexAttribPointer(0, 3, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 0);
-        org.lwjgl.opengl.GL20.glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2,GL_FLOAT, false, stride, 3 * Float.BYTES);
+      glEnableVertexAttribArray(1);
 
-        // Strada 1: Texture Coords (U, V)
-        org.lwjgl.opengl.GL20.glVertexAttribPointer(1, 2, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 3 * Float.BYTES);
-        org.lwjgl.opengl.GL20.glEnableVertexAttribArray(1);
+       glBindBuffer(GL_ARRAY_BUFFER, 0);
+      glBindVertexArray(0);
 
-        org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 0);
-        org.lwjgl.opengl.GL30.glBindVertexArray(0);
-
-        org.lwjgl.system.MemoryUtil.memFree(vertexBuffer);
+        memFree(vertexBuffer);
     }
 
-
-    // Assicurati di avere questo metodo di supporto in fondo a Chunk.java
-    private void addVertex(java.util.ArrayList<Float> list, float x, float y, float z, float u, float v) {
+    private void addVertex(ArrayList<Float> list, float x, float y, float z, float u, float v) {
         list.add(x);
         list.add(y);
         list.add(z);
@@ -273,9 +253,9 @@ public class Chunk {
 
 
     public void render() {
-        org.lwjgl.opengl.GL30.glBindVertexArray(this.vaoID);
-        org.lwjgl.opengl.GL11.glDrawArrays(org.lwjgl.opengl.GL11.GL_TRIANGLES, 0, this.vertexCount);
-        org.lwjgl.opengl.GL30.glBindVertexArray(0);
+        glBindVertexArray(this.vaoID);
+        glDrawArrays(GL_TRIANGLES, 0, this.vertexCount);
+        glBindVertexArray(0);
     }
 
     public void cleanup(){
@@ -349,7 +329,7 @@ public void saveChunkDuringOtherThread(){
             File temporaryFile = new File(directory, file.getName() + ".tmp");
             boolean saved = false;
             try {
-            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(temporaryFile)) {
+            try (FileOutputStream fos = new FileOutputStream(temporaryFile)) {
                 for (int x = 0; x < 16; x++) {
                     for (int y = 0; y < 64; y++) {
                         for (int z = 0; z < 16; z++) {
@@ -366,7 +346,7 @@ public void saveChunkDuringOtherThread(){
                 }
                 saved = true;
             } catch (Exception e) {
-                System.err.println("Errore nel thread di salvataggio del chunk " + cx + "," + cz + ": " + e.getMessage());
+                System.err.println("error in the thread while loading chunk " + cx + "," + cz + ": " + e.getMessage());
             } finally {
                 boolean saveAgain;
                 synchronized (saveLock) {

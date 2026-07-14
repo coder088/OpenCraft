@@ -1,13 +1,13 @@
+import java.util.ArrayDeque;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class World {
-    // La chiave è una String (es. "x,z"), il valore è l'oggetto Chunk corrispondente
     public  java.util.Map<String, Chunk> chunks = new java.util.concurrent.ConcurrentHashMap<>();
     private FastNoiseLite noise;
     private static final int DEFAULT_RENDER_DISTANCE = 10;
     private static final int CHUNKS_TO_MESH_PER_UPDATE = 2;
 
-    private final java.util.ArrayDeque<Chunk> chunksWaitingForMesh = new java.util.ArrayDeque<>();
+    private final ArrayDeque<Chunk> chunksWaitingForMesh = new ArrayDeque<>();
     private int renderDistance = DEFAULT_RENDER_DISTANCE;
 
     public World() {
@@ -37,12 +37,12 @@ public class World {
             }
         }
 
-        // Prima i chunk vicini, così il terreno attorno al giocatore compare subito.
+        //First we load the chunks close to the player
         newChunks.sort(java.util.Comparator.comparingInt(chunk ->
                 Math.abs(chunk.getChunkX() - currentChunkX) + Math.abs(chunk.getChunkZ() - currentChunkZ)));
         chunksWaitingForMesh.addAll(newChunks);
 
-        // Usa lo stesso raggio per caricare e scaricare.
+        //unloading radius = rendering radius to avoid memory issues
         int maxDistance = renderDistance;
         chunks.entrySet().removeIf(entry -> {
             Chunk chunk = entry.getValue();
@@ -56,12 +56,11 @@ public class World {
             return false;
         });
 
-        // Costruisci poche mesh per frame, evitando picchi di CPU, heap e VRAM.
         for (int generated = 0; generated < CHUNKS_TO_MESH_PER_UPDATE && !chunksWaitingForMesh.isEmpty();) {
             Chunk chunk = chunksWaitingForMesh.removeFirst();
             String key = chunk.getChunkX() + "," + chunk.getChunkZ();
             if (chunks.get(key) != chunk) {
-                continue; // il chunk era uscito dal raggio mentre era in coda
+                continue;
             }
 
             chunk.generateMesh(this);
@@ -74,14 +73,12 @@ public class World {
     }
 
     public void render() {
-        // Cicla attraverso tutti i chunk salvati nella mappa e chiama il loro metodo render
         for (Chunk chunk : chunks.values()) {
             if (chunk.hasMesh()) {
                 chunk.render();
             }
         }
     }
-    // Trova il tipo di blocco a qualsiasi coordinata X, Y, Z del mondo
     public byte getBlockAt(float worldX, float worldY, float worldZ) {
         if (worldY < 0 || worldY >= 64) {
             return 0;
@@ -134,9 +131,9 @@ public class World {
                 if (chunkVicino != null) chunkVicino.generateMesh(this);
             }
             else if (localZ == 15) {
-                String vicinoKey = chunkX + "," + (chunkZ + 1);
-                Chunk chunkVicino = chunks.get(vicinoKey);
-                if (chunkVicino != null) chunkVicino.generateMesh(this);
+                String closeByKey = chunkX + "," + (chunkZ + 1);
+                Chunk closeByChunk = chunks.get(closeByKey);
+                if (closeByChunk != null) closeByChunk.generateMesh(this);
             }
         }
     }
@@ -144,7 +141,7 @@ public class World {
         String key = cx + "," + cz;
         Chunk neighbor = chunks.get(key);
         if (neighbor != null && neighbor.hasMesh()) {
-            neighbor.generateMesh(this); // Ricalcola i vertici aggiornati
+            neighbor.generateMesh(this);
         }
 
     }
@@ -152,7 +149,7 @@ public class World {
 
     public void setRenderDistance(int renderDistance) {
         if (renderDistance < 1) {
-            throw new IllegalArgumentException("La render distance deve essere almeno 1");
+            throw new IllegalArgumentException("Render distance must be at least 1");
         }
         this.renderDistance = renderDistance;
     }
