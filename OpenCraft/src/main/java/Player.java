@@ -24,6 +24,9 @@ public class Player {
     public Vector3i playerRay;
     public float reach = 5.0f;
     private boolean leftMouseWasPressed = false;
+    private Inventory inventory;
+    public boolean hasInventoryOpen;
+    private boolean eKeyWasPressed = false;
 
     public Vector3f getPosition(){return position;}
 
@@ -34,6 +37,7 @@ public class Player {
         this.speed = 6.0f;
         this.yaw = -90.0f;
         this.pitch = 0.0f;
+        this.inventory = new Inventory();
 
 // load the initial forward vector to allow the camera to see
         Vector3f direction = new Vector3f();
@@ -44,166 +48,219 @@ public class Player {
 
     }
     public void handleInput(long window, float deltaTime,World world) {
-        float space = speed * deltaTime;
-        float displacementX = 0.0f;
-        float displacementZ = 0.0f;
-
-
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            Vector3f displacement = new Vector3f(this.forward).mul(space);
-            displacement.y = 0.0f;
-            if (displacement.lengthSquared() > 0) {
-                displacement.normalize().mul(space);
+        boolean eKeyIsPressedNow = (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS);
+        if (eKeyIsPressedNow && !eKeyWasPressed) {
+            hasInventoryOpen = !hasInventoryOpen;
+            firstMouse = true;
+            if (hasInventoryOpen) {
+                // if inventory is open we allow the player to use the mouse
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            } else {
+                //else, we block the mouse at the center of the screen
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
+        }
+        eKeyWasPressed = eKeyIsPressedNow;
+        if(hasInventoryOpen){
+            return;
+        }
+
+
+            float space = speed * deltaTime;
+            float displacementX = 0.0f;
+            float displacementZ = 0.0f;
+
+
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+                Vector3f displacement = new Vector3f(this.forward).mul(space);
+                displacement.y = 0.0f;
+                if (displacement.lengthSquared() > 0) {
+                    displacement.normalize().mul(space);
+                }
                 displacementX += displacement.x;
                 displacementZ += displacement.z;
 
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            Vector3f displacement = new Vector3f(this.forward).mul(space);
-            displacement.y = 0.0f;
-            if (displacement.lengthSquared() > 0) {
-                displacement.normalize().mul(space);
             }
-            displacementX -= displacement.x;
-            displacementZ -= displacement.z;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            Vector3f lateralDir = new org.joml.Vector3f();
-            this.forward.cross(this.up, lateralDir);
-            lateralDir.y = 0.0f;
-            if (lateralDir.lengthSquared() > 0) {
-                lateralDir.normalize().mul(space);
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+                Vector3f displacement = new Vector3f(this.forward).mul(space);
+                displacement.y = 0.0f;
+                if (displacement.lengthSquared() > 0) {
+                    displacement.normalize().mul(space);
+                }
+                displacementX -= displacement.x;
+                displacementZ -= displacement.z;
             }
-            displacementX -= lateralDir.x;
-            displacementZ -= lateralDir.z;
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            org.joml.Vector3f lateralDir = new org.joml.Vector3f();
-            this.forward.cross(this.up, lateralDir);
-            lateralDir.y = 0.0f;
-            if (lateralDir.lengthSquared() > 0) {
-                lateralDir.normalize().mul(space);
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+                Vector3f lateralDir = new org.joml.Vector3f();
+                this.forward.cross(this.up, lateralDir);
+                lateralDir.y = 0.0f;
+                if (lateralDir.lengthSquared() > 0) {
+                    lateralDir.normalize().mul(space);
+                }
+                displacementX -= lateralDir.x;
+                displacementZ -= lateralDir.z;
             }
-            displacementX += lateralDir.x;
-            displacementZ += lateralDir.z;
-        }
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                org.joml.Vector3f lateralDir = new org.joml.Vector3f();
+                this.forward.cross(this.up, lateralDir);
+                lateralDir.y = 0.0f;
+                if (lateralDir.lengthSquared() > 0) {
+                    lateralDir.normalize().mul(space);
+                }
+                displacementX += lateralDir.x;
+                displacementZ += lateralDir.z;
+            }
 
 
-        //finds the first solid block where the player is
-        int startX;
-        int endX ;
-        int startY ;
-        int endY ;
-        int startZ;
-        int endZ;
-        float newX = this.position.x + displacementX;
-        startX = (int)Math.floor(newX) -1;
-        endX = (int)Math.floor(newX) +1;
-         startY = (int) Math.floor(this.position.y) - 1;
-         endY   = (int) Math.floor(this.position.y) + 2; // +2 since the player's height is 1.8 blocks
-         startZ = (int) Math.floor(this.position.z) - 1;
-         endZ   = (int) Math.floor(this.position.z) + 1;
-        AABB hitboxVirtualeX = gethitboxAt(newX,this.position.y,this.position.z);
-        boolean collisionX = false;
-        for(int bx = startX; bx <= endX; bx++){
-            for(int by = startY; by <= endY; by++){
-                for(int bz = startZ; bz <= endZ; bz++){
-                    if(world.getBlockAt(bx,by,bz) != 0){
-                        AABB blockHitbox = new AABB(bx,by,bz, bx+1,by+1,bz+1);
-                        if(hitboxVirtualeX.intersects(blockHitbox)){
-                            collisionX = true;
-                            break;
+            //finds the first solid block where the player is
+            int startX;
+            int endX;
+            int startY;
+            int endY;
+            int startZ;
+            int endZ;
+            float newX = this.position.x + displacementX;
+            startX = (int) Math.floor(newX) - 1;
+            endX = (int) Math.floor(newX) + 1;
+            startY = (int) Math.floor(this.position.y) - 1;
+            endY = (int) Math.floor(this.position.y) + 2; // +2 since the player's height is 1.8 blocks
+            startZ = (int) Math.floor(this.position.z) - 1;
+            endZ = (int) Math.floor(this.position.z) + 1;
+            AABB hitboxVirtualeX = gethitboxAt(newX, this.position.y, this.position.z);
+            boolean collisionX = false;
+            for (int bx = startX; bx <= endX; bx++) {
+                for (int by = startY; by <= endY; by++) {
+                    for (int bz = startZ; bz <= endZ; bz++) {
+                        if (world.getBlockAt(bx, by, bz) != 0) {
+                            AABB blockHitbox = new AABB(bx, by, bz, bx + 1, by + 1, bz + 1);
+                            if (hitboxVirtualeX.intersects(blockHitbox)) {
+                                collisionX = true;
+                                break;
+                            }
                         }
                     }
                 }
             }
-        }
-        if(!collisionX){
-            this.position.x = newX;
-        }
-        float newZ = this.position.z  + displacementZ;
-        startX = (int)Math.floor(this.position.x) -1;
-        endX = (int)Math.floor(this.position.x) +1;
-        startY = (int) Math.floor(this.position.y) - 1;
-        endY   = (int) Math.floor(this.position.y) + 2; // +2 since the player's height is 1.8 blocks
-        startZ = (int) Math.floor(newZ) - 1;
-        endZ   = (int) Math.floor(newZ) + 1;
-        AABB hitboxVirtualeZ = gethitboxAt(this.position.x,this.position.y,newZ);
-        boolean collisionZ = false;
-        for(int bx = startX; bx <= endX; bx++){
-            for(int by = startY; by <= endY; by++){
-                for(int bz = startZ; bz <= endZ; bz++){
-                    if(world.getBlockAt(bx,by,bz)!=0){
-                        AABB blockHitbox = new AABB(bx,by,bz,bx+1,by+1,bz+1);
-                        if(hitboxVirtualeZ.intersects(blockHitbox)){
-                            collisionZ = true;
-                            break;
-                        }
-                    }
-
-                }
+            if (!collisionX) {
+                this.position.x = newX;
             }
-        }
-        if(!collisionZ){
-            this.position.z = newZ;
-        }
-
-
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && isGrounded) {
-            this.velocityY = 5.0f;
-            this.isGrounded = false;
-        }
-        // Permanent gravity
-        this.velocityY -= 9.8f * deltaTime;
-        float displacementY = this.velocityY * deltaTime;
-
-        float newY = this.position.y + displacementY;
-        startX = (int)Math.floor(this.position.x) -1;
-        endX = (int)Math.floor(this.position.x) +1;
-        startY = (int) Math.floor(newY) - 1;
-        endY   = (int) Math.floor(newY) + 2;
-        startZ = (int) Math.floor(this.position.z) - 1;
-        endZ   = (int) Math.floor(this.position.z) + 1;
-        AABB VirtualHitboxY = gethitboxAt(this.position.x,newY - 0.005f,this.position.z);
-        boolean collisionY = false;
-        float tuchedBlockHeight = 0.0f;
-        for(int bx = startX; bx <= endX; bx++){
-            for(int by = startY; by <= endY; by++){
-                for(int bz = startZ; bz <= endZ; bz++){
-                    if(world.getBlockAt(bx,by,bz)!= 0){
-                        AABB hitboxBlocco = new AABB(bx,by,bz,bx+1,by+1,bz+1);
-                        if(VirtualHitboxY.intersects(hitboxBlocco)){
-                            collisionY = true;
-                            tuchedBlockHeight = by+1f;
-                            break;
+            float newZ = this.position.z + displacementZ;
+            startX = (int) Math.floor(this.position.x) - 1;
+            endX = (int) Math.floor(this.position.x) + 1;
+            startY = (int) Math.floor(this.position.y) - 1;
+            endY = (int) Math.floor(this.position.y) + 2; // +2 since the player's height is 1.8 blocks
+            startZ = (int) Math.floor(newZ) - 1;
+            endZ = (int) Math.floor(newZ) + 1;
+            AABB hitboxVirtualeZ = gethitboxAt(this.position.x, this.position.y, newZ);
+            boolean collisionZ = false;
+            for (int bx = startX; bx <= endX; bx++) {
+                for (int by = startY; by <= endY; by++) {
+                    for (int bz = startZ; bz <= endZ; bz++) {
+                        if (world.getBlockAt(bx, by, bz) != 0) {
+                            AABB blockHitbox = new AABB(bx, by, bz, bx + 1, by + 1, bz + 1);
+                            if (hitboxVirtualeZ.intersects(blockHitbox)) {
+                                collisionZ = true;
+                                break;
+                            }
                         }
+
                     }
                 }
             }
-        }
-        if(collisionY){
-            if(displacementY <=0){
-                this.position.y = tuchedBlockHeight + 0.001f;
-                this.velocityY = 0.0f;
-                this.isGrounded = true;
+            if (!collisionZ) {
+                this.position.z = newZ;
             }
-        }
-        else{
-            this.position.y = newY;
-            this.isGrounded = false;
 
-        }
-        boolean leftMouseIsPressedNow = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
-        if(leftMouseIsPressedNow && !this.leftMouseWasPressed){
-            Vector3i temp;
-            temp =rayCasting(world);
-            if(temp != null) {
-                world.setBlockAt(temp.x, temp.y, temp.z, (byte) 0);
+
+            if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && isGrounded) {
+                this.velocityY = 5.0f;
+                this.isGrounded = false;
+            }
+            // Permanent gravity
+            this.velocityY -= 9.8f * deltaTime;
+            float displacementY = this.velocityY * deltaTime;
+
+            float newY = this.position.y + displacementY;
+            startX = (int) Math.floor(this.position.x) - 1;
+            endX = (int) Math.floor(this.position.x) + 1;
+            startY = (int) Math.floor(newY) - 1;
+            endY = (int) Math.floor(newY) + 2;
+            startZ = (int) Math.floor(this.position.z) - 1;
+            endZ = (int) Math.floor(this.position.z) + 1;
+            AABB VirtualHitboxY = gethitboxAt(this.position.x, newY - 0.005f, this.position.z);
+            boolean collisionY = false;
+            float tuchedBlockHeight = 0.0f;
+            for (int bx = startX; bx <= endX; bx++) {
+                for (int by = startY; by <= endY; by++) {
+                    for (int bz = startZ; bz <= endZ; bz++) {
+                        if (world.getBlockAt(bx, by, bz) != 0) {
+                            AABB hitboxBlocco = new AABB(bx, by, bz, bx + 1, by + 1, bz + 1);
+                            if (VirtualHitboxY.intersects(hitboxBlocco)) {
+                                collisionY = true;
+                                tuchedBlockHeight = by + 1f;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (collisionY) {
+                if (displacementY <= 0) {
+                    this.position.y = tuchedBlockHeight + 0.001f;
+                    this.velocityY = 0.0f;
+                    this.isGrounded = true;
+                }
+            } else {
+                this.position.y = newY;
+                this.isGrounded = false;
+
+            }
+            boolean leftMouseIsPressedNow = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+            if (leftMouseIsPressedNow && !this.leftMouseWasPressed) {
+                Vector3i temp;
+                temp = rayCasting(world);
+                if (temp != null) {
+                    world.setBlockAt(temp.x, temp.y, temp.z, (byte) 0);
+                }
+            }
+            leftMouseWasPressed = leftMouseIsPressedNow;
+            //hotbar control
+            if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(0);
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(1);
+            }
+            if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(2);
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(3);
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(4);
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(5);
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(7);
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(7);
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS) {
+                this.inventory.setSelectedSlot(8);
             }
         }
-        leftMouseWasPressed = leftMouseIsPressedNow;
-    }
+
 
     public Matrix4f getViewMatrix() {
         Matrix4f viewMatrix = new Matrix4f();
@@ -224,6 +281,9 @@ public class Player {
     }
 
     public void handleMouseInput(double xpos, double ypos) {
+        if(hasInventoryOpen){
+            return;
+        }
         if (firstMouse) {
             lastMouseX = xpos;
             lastMouseY = ypos;

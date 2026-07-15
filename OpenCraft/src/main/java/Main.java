@@ -4,6 +4,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.stb.STBImage;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +26,9 @@ public class Main {
     public Player player = new Player(8.0f, 20f, 20.0f);
     public World world = new World();
     public static final ExecutorService saveExecutor = Executors.newSingleThreadExecutor();
+
+
+
     public static void main(String[] args) {
         configureWindowsTaskbar();
         new Main().run();
@@ -183,19 +187,172 @@ public class Main {
                 -0.5f, -0.5f, -0.5f,   0.672f , 0.005f
         };
 
+        float[] chrosshairArray = new float[]{
+               -0.03f, 0.0f,0.0f,
+                0.03f,0.0f,0.0f,
+                0.0f,0.03f,0.0f,
+                0.0f,-0.03f,0.0f
+
+        };
+        float[] hotbarBackgroundVertices = new float[] {
+                -0.45f, -0.90f,  0.0f,
+                0.45f, -0.90f,  0.0f,
+                0.45f, -0.75f,  0.0f,
+
+                -0.45f, -0.90f,  0.0f,
+                0.45f, -0.75f,  0.0f,
+                -0.45f, -0.75f,  0.0f
+        };
+        float[] hotbarSlotsVertices = new float[] {
+                // Slot 1
+                -0.44f, -0.89f, 0.0f,  -0.36f, -0.89f, 0.0f,  -0.36f, -0.76f, 0.0f,
+                -0.44f, -0.89f, 0.0f,  -0.36f, -0.76f, 0.0f,  -0.44f, -0.76f, 0.0f,
+                // Slot 2
+                -0.35f, -0.89f, 0.0f,  -0.27f, -0.89f, 0.0f,  -0.27f, -0.76f, 0.0f,
+                -0.35f, -0.89f, 0.0f,  -0.27f, -0.76f, 0.0f,  -0.35f, -0.76f, 0.0f,
+                // Slot 3
+                -0.26f, -0.89f, 0.0f,  -0.18f, -0.89f, 0.0f,  -0.18f, -0.76f, 0.0f,
+                -0.26f, -0.89f, 0.0f,  -0.18f, -0.76f, 0.0f,  -0.26f, -0.76f, 0.0f,
+                // Slot 4
+                -0.17f, -0.89f, 0.0f,  -0.09f, -0.89f, 0.0f,  -0.09f, -0.76f, 0.0f,
+                -0.17f, -0.89f, 0.0f,  -0.09f, -0.76f, 0.0f,  -0.17f, -0.76f, 0.0f,
+                // Slot 5
+                -0.04f, -0.89f, 0.0f,   0.04f, -0.89f, 0.0f,   0.04f, -0.76f, 0.0f,
+                -0.04f, -0.89f, 0.0f,   0.04f, -0.76f, 0.0f,  -0.04f, -0.76f, 0.0f,
+                // Slot 6
+                0.09f, -0.89f, 0.0f,   0.17f, -0.89f, 0.0f,   0.17f, -0.76f, 0.0f,
+                0.09f, -0.89f, 0.0f,   0.17f, -0.76f, 0.0f,   0.09f, -0.76f, 0.0f,
+                // Slot 7
+                0.18f, -0.89f, 0.0f,   0.26f, -0.89f, 0.0f,   0.26f, -0.76f, 0.0f,
+                0.18f, -0.89f, 0.0f,   0.26f, -0.76f, 0.0f,   0.18f, -0.76f, 0.0f,
+                // Slot 8
+                0.27f, -0.89f, 0.0f,   0.35f, -0.89f, 0.0f,   0.35f, -0.76f, 0.0f,
+                0.27f, -0.89f, 0.0f,   0.35f, -0.76f, 0.0f,   0.27f, -0.76f, 0.0f,
+                // Slot 9
+                0.36f, -0.89f, 0.0f,   0.44f, -0.89f, 0.0f,   0.44f, -0.76f, 0.0f,
+                0.36f, -0.89f, 0.0f,   0.44f, -0.76f, 0.0f,   0.36f, -0.76f, 0.0f
+        };
+        float[] inventoryWindowVertices = new float[] {
+                -0.35f, -0.45f,  0.0f,
+                0.35f, -0.45f,  0.0f,
+                0.35f,  0.45f,  0.0f,
+                -0.35f, -0.45f,  0.0f,
+                0.35f,  0.45f,  0.0f,
+                -0.35f,  0.45f,  0.0f
+        };
+        float[] inventorySlotsVertices = new float[] {
+                //ROW 1
+                -0.32f,  0.25f, 0.0f,  -0.26f,  0.25f, 0.0f,  -0.26f,  0.35f, 0.0f,  -0.32f,  0.25f, 0.0f,  -0.26f,  0.35f, 0.0f,  -0.32f,  0.35f, 0.0f,
+                -0.25f,  0.25f, 0.0f,  -0.19f,  0.25f, 0.0f,  -0.19f,  0.35f, 0.0f,  -0.25f,  0.25f, 0.0f,  -0.19f,  0.35f, 0.0f,  -0.25f,  0.35f, 0.0f,
+                -0.18f,  0.25f, 0.0f,  -0.12f,  0.25f, 0.0f,  -0.12f,  0.35f, 0.0f,  -0.18f,  0.25f, 0.0f,  -0.12f,  0.35f, 0.0f,  -0.18f,  0.35f, 0.0f,
+                -0.11f,  0.25f, 0.0f,  -0.05f,  0.25f, 0.0f,  -0.05f,  0.35f, 0.0f,  -0.11f,  0.25f, 0.0f,  -0.05f,  0.35f, 0.0f,  -0.11f,  0.35f, 0.0f,
+                -0.03f,  0.25f, 0.0f,   0.03f,  0.25f, 0.0f,   0.03f,  0.35f, 0.0f,  -0.03f,  0.25f, 0.0f,   0.03f,  0.35f, 0.0f,  -0.03f,  0.35f, 0.0f,
+                0.05f,  0.25f, 0.0f,   0.11f,  0.25f, 0.0f,   0.11f,  0.35f, 0.0f,   0.05f,  0.25f, 0.0f,   0.11f,  0.35f, 0.0f,   0.05f,  0.35f, 0.0f,
+                0.12f,  0.25f, 0.0f,   0.18f,  0.25f, 0.0f,   0.18f,  0.35f, 0.0f,   0.12f,  0.25f, 0.0f,   0.18f,  0.35f, 0.0f,   0.12f,  0.35f, 0.0f,
+                0.19f,  0.25f, 0.0f,   0.25f,  0.25f, 0.0f,   0.25f,  0.35f, 0.0f,   0.19f,  0.25f, 0.0f,   0.25f,  0.35f, 0.0f,   0.19f,  0.35f, 0.0f,
+                0.26f,  0.25f, 0.0f,   0.32f,  0.25f, 0.0f,   0.32f,  0.35f, 0.0f,   0.26f,  0.25f, 0.0f,   0.32f,  0.35f, 0.0f,   0.26f,  0.35f, 0.0f,
+                //ROW 2
+                -0.32f,  0.10f, 0.0f,  -0.26f,  0.10f, 0.0f,  -0.26f,  0.20f, 0.0f,  -0.32f,  0.10f, 0.0f,  -0.26f,  0.20f, 0.0f,  -0.32f,  0.20f, 0.0f,
+                -0.25f,  0.10f, 0.0f,  -0.19f,  0.10f, 0.0f,  -0.19f,  0.20f, 0.0f,  -0.25f,  0.10f, 0.0f,  -0.19f,  0.20f, 0.0f,  -0.25f,  0.20f, 0.0f,
+                -0.18f,  0.10f, 0.0f,  -0.12f,  0.10f, 0.0f,  -0.12f,  0.20f, 0.0f,  -0.18f,  0.10f, 0.0f,  -0.12f,  0.20f, 0.0f,  -0.18f,  0.20f, 0.0f,
+                -0.11f,  0.10f, 0.0f,  -0.05f,  0.10f, 0.0f,  -0.05f,  0.20f, 0.0f,  -0.11f,  0.10f, 0.0f,  -0.05f,  0.20f, 0.0f,  -0.11f,  0.20f, 0.0f,
+                -0.03f,  0.10f, 0.0f,   0.03f,  0.10f, 0.0f,   0.03f,  0.20f, 0.0f,  -0.03f,  0.10f, 0.0f,   0.03f,  0.20f, 0.0f,  -0.03f,  0.20f, 0.0f,
+                0.05f,  0.10f, 0.0f,   0.11f,  0.10f, 0.0f,   0.11f,  0.20f, 0.0f,   0.05f,  0.10f, 0.0f,   0.11f,  0.20f, 0.0f,   0.05f,  0.20f, 0.0f,
+                0.12f,  0.10f, 0.0f,   0.18f,  0.10f, 0.0f,   0.18f,  0.20f, 0.0f,   0.12f,  0.10f, 0.0f,   0.18f,  0.20f, 0.0f,   0.12f,  0.20f, 0.0f,
+                0.19f,  0.10f, 0.0f,   0.25f,  0.10f, 0.0f,   0.25f,  0.20f, 0.0f,   0.19f,  0.10f, 0.0f,   0.25f,  0.20f, 0.0f,   0.19f,  0.20f, 0.0f,
+                0.26f,  0.10f, 0.0f,   0.32f,  0.10f, 0.0f,   0.32f,  0.20f, 0.0f,   0.26f,  0.10f, 0.0f,   0.32f,  0.20f, 0.0f,   0.26f,  0.20f, 0.0f,
+                //ROW 3
+                -0.32f, -0.05f, 0.0f,  -0.26f, -0.05f, 0.0f,  -0.26f,  0.05f, 0.0f,  -0.32f, -0.05f, 0.0f,  -0.26f,  0.05f, 0.0f,  -0.32f,  0.05f, 0.0f,
+                -0.25f, -0.05f, 0.0f,  -0.19f, -0.05f, 0.0f,  -0.19f,  0.05f, 0.0f,  -0.25f, -0.05f, 0.0f,  -0.19f,  0.05f, 0.0f,  -0.25f,  0.05f, 0.0f,
+                -0.18f, -0.05f, 0.0f,  -0.12f, -0.05f, 0.0f,  -0.12f,  0.05f, 0.0f,  -0.18f, -0.05f, 0.0f,  -0.12f,  0.05f, 0.0f,  -0.18f,  0.05f, 0.0f,
+                -0.11f, -0.05f, 0.0f,  -0.05f, -0.05f, 0.0f,  -0.05f,  0.05f, 0.0f,  -0.11f, -0.05f, 0.0f,  -0.05f,  0.05f, 0.0f,  -0.11f,  0.05f, 0.0f,
+                -0.03f, -0.05f, 0.0f,   0.03f, -0.05f, 0.0f,   0.03f,  0.05f, 0.0f,  -0.03f, -0.05f, 0.0f,   0.03f,  0.05f, 0.0f,  -0.03f,  0.05f, 0.0f,
+                0.05f, -0.05f, 0.0f,   0.11f, -0.05f, 0.0f,   0.11f,  0.05f, 0.0f,   0.05f, -0.05f, 0.0f,   0.11f,  0.05f, 0.0f,   0.05f,  0.05f, 0.0f,
+                0.12f, -0.05f, 0.0f,   0.18f, -0.05f, 0.0f,   0.18f,  0.05f, 0.0f,   0.12f, -0.05f, 0.0f,   0.18f,  0.05f, 0.0f,   0.12f,  0.05f, 0.0f,
+                0.19f, -0.05f, 0.0f,   0.25f, -0.05f, 0.0f,   0.25f,  0.05f, 0.0f,   0.19f, -0.05f, 0.0f,   0.25f,  0.05f, 0.0f,   0.19f,  0.05f, 0.0f,
+                0.26f, -0.05f, 0.0f,   0.32f, -0.05f, 0.0f,   0.32f,  0.05f, 0.0f,   0.26f, -0.05f, 0.0f,   0.32f,  0.05f, 0.0f,   0.26f,  0.05f, 0.0f
+        };
+
+
+
         //finds the position of the variables inside the shader
         int modelLoc = org.lwjgl.opengl.GL20.glGetUniformLocation(shader.programID, "model");
         int viewLoc = org.lwjgl.opengl.GL20.glGetUniformLocation(shader.programID, "view");
         int projLoc = org.lwjgl.opengl.GL20.glGetUniformLocation(shader.programID, "projection");
-        java.nio.FloatBuffer sleaveBuffer = MemoryUtil.memAllocFloat(manicaArray.length);
+        int useTexLoc = glGetUniformLocation(shader.programID, "useTexture");
+        int guiColorLoc = glGetUniformLocation(shader.programID, "guiColor");
+
+
+        // init the  buffers
+        FloatBuffer inventoryWindowSlotsBuffer = MemoryUtil.memAllocFloat(inventorySlotsVertices.length);
+        inventoryWindowSlotsBuffer.put(inventorySlotsVertices).flip();
+        FloatBuffer inventoryWindowBuffer = MemoryUtil.memAllocFloat(inventoryWindowVertices.length);
+        inventoryWindowBuffer.put(inventoryWindowVertices).flip();
+        FloatBuffer sleaveBuffer = MemoryUtil.memAllocFloat(manicaArray.length);
         sleaveBuffer.put(manicaArray).flip();
-        java.nio.FloatBuffer handBuffer = MemoryUtil.memAllocFloat(manoArray.length);
+        FloatBuffer handBuffer = MemoryUtil.memAllocFloat(manoArray.length);
+        FloatBuffer crosshairBuffer = MemoryUtil.memAllocFloat(chrosshairArray.length);
+        FloatBuffer hotbarBackgroundVerticesBuffer = MemoryUtil.memAllocFloat(hotbarBackgroundVertices.length);
+        FloatBuffer hotbarSlotsVerticesBuffer = MemoryUtil.memAllocFloat(hotbarSlotsVertices.length);
+        crosshairBuffer.put(chrosshairArray).flip();
         handBuffer.put(manoArray).flip();
+        hotbarBackgroundVerticesBuffer.put(hotbarBackgroundVertices).flip();
+        hotbarSlotsVerticesBuffer.put(hotbarSlotsVertices).flip();
+
         byte stride = 5 * Float.BYTES;
+        //inventory slots
+        int inventorySlotsVao = glGenVertexArrays();
+        glBindVertexArray(inventorySlotsVao);
+        int inventorySlotsVbo = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER,inventorySlotsVbo);
+        glBufferData(GL_ARRAY_BUFFER,inventoryWindowSlotsBuffer,GL_STATIC_DRAW);
+        glVertexAttribPointer(0,3,GL_FLOAT,false,3 * Float.BYTES,0);
+        glEnableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER,0);
+        glBindVertexArray(0);
+        MemoryUtil.memFree(inventoryWindowSlotsBuffer);
+        //inventory window
+        int inventoryWindowVao = glGenVertexArrays();
+        glBindVertexArray(inventoryWindowVao);
+        int inventoryWindowVbo = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER,inventoryWindowVbo);
+        glBufferData(GL_ARRAY_BUFFER,inventoryWindowBuffer,GL_STATIC_DRAW);
+        glVertexAttribPointer(0,3,GL_FLOAT,false,3 * Float.BYTES,0);
+        glEnableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER,0);
+        glBindVertexArray(0);
+        MemoryUtil.memFree(inventoryWindowBuffer);
+        //hotbar background
+        int hotbarBackgroundVao = glGenVertexArrays();
+        glBindVertexArray(hotbarBackgroundVao);
+        int hotbarBackgroundVbo =glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER,hotbarBackgroundVbo);
+        glBufferData(GL_ARRAY_BUFFER,hotbarBackgroundVerticesBuffer,GL_STATIC_DRAW);
+        glVertexAttribPointer(0,3,GL_FLOAT,false,3 * Float.BYTES,0);
+        glEnableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        MemoryUtil.memFree(hotbarBackgroundVerticesBuffer);
+        //hotbar slots
+        int hotbarSlotsVao = glGenVertexArrays();
+        glBindVertexArray(hotbarSlotsVao);
+        int hotbarSlotsVbo =glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, hotbarSlotsVbo);
+        glBufferData(GL_ARRAY_BUFFER,hotbarSlotsVerticesBuffer,GL_STATIC_DRAW);
+        glVertexAttribPointer(0,3,GL_FLOAT,false,3 * Float.BYTES,0);
+        glEnableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        MemoryUtil.memFree(hotbarSlotsVerticesBuffer);
+        // init the sleave  vao,vbo. Sends them to the gpu
         int sleaveVaoID = glGenVertexArrays();
          glBindVertexArray(sleaveVaoID);
         int sleaveVBOID =glGenBuffers();
-        org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, sleaveVBOID);
+        glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, sleaveVBOID);
         glBufferData(GL_ARRAY_BUFFER,sleaveBuffer,GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, org.lwjgl.opengl.GL11.GL_FLOAT, false, stride, 0);
         glEnableVertexAttribArray(0);
@@ -205,6 +362,7 @@ public class Main {
         glBindVertexArray(0);
         org.lwjgl.system.MemoryUtil.memFree(sleaveBuffer);
 
+        // init the hand and vao,vbo. Sends them to the gpu
         int handVaoID = glGenVertexArrays();
         glBindVertexArray(handVaoID);
         int handVBOID =glGenBuffers();
@@ -217,7 +375,18 @@ public class Main {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
         MemoryUtil.memFree(handBuffer);
-
+        // init the corosshair and vao,vbo. Sends them to the gpu
+        int crosshairVaoID = glGenVertexArrays();
+        glBindVertexArray(crosshairVaoID);
+        int crosshairVboID = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER,crosshairVboID);
+        glBufferData(GL_ARRAY_BUFFER,crosshairBuffer,GL_STATIC_DRAW);
+        glVertexAttribPointer(0,3,GL_FLOAT,false,3 * Float.BYTES,0);
+        glEnableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        MemoryUtil.memFree(crosshairBuffer);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         while (!glfwWindowShouldClose(window)) {
@@ -260,7 +429,7 @@ public class Main {
             glUniformMatrix4fv(viewLoc, false, matrixBuffer);
             projectionMatrix.get(0, matrixBuffer);
             glUniformMatrix4fv(projLoc, false, matrixBuffer);
-
+            glUniform1i(useTexLoc,1);
             world.render();
             modelMatrix.identity()
                        .translate(player.getPosition().x,player.getPosition().y + 1.6f,player.getPosition().z)
@@ -280,6 +449,84 @@ public class Main {
             glBindVertexArray(handVaoID);
             glDrawArrays(GL_TRIANGLES,0,36);
             glBindVertexArray(0);
+            glUniform1i(useTexLoc,0);
+            //crosshair
+            modelMatrix.identity();
+            viewMatrix.identity();
+            projectionMatrix.identity().ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+
+            modelMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(modelLoc, false, matrixBuffer);
+            viewMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(viewLoc, false, matrixBuffer);
+            projectionMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(projLoc, false, matrixBuffer);
+
+            glDisable(GL_DEPTH_TEST);
+            glLineWidth(2.0f);
+            glBindVertexArray(crosshairVaoID);
+            glDrawArrays(GL_LINES, 0, 4);
+            glBindVertexArray(0);
+            glEnable(GL_DEPTH_TEST);
+            glEnableVertexAttribArray(1);
+            //inventory window
+            if(player.hasInventoryOpen){
+                glDisable(GL_DEPTH_TEST);
+                //draws the window
+                glUniform4f(guiColorLoc,  0.35f, 0.35f, 0.35f, 1.0f);
+                glBindVertexArray(inventoryWindowVao);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                //draws the grid
+                glUniform4f(guiColorLoc, 0.50f, 0.50f, 0.50f, 1.0f);
+                glBindVertexArray(inventorySlotsVao);
+                glDrawArrays(GL_TRIANGLES, 0, 162);
+                glBindVertexArray(0);
+                glEnable(GL_DEPTH_TEST);
+            }
+            //hotbar background
+            modelMatrix.identity();
+            viewMatrix.identity();
+            projectionMatrix.identity().ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+
+            modelMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(modelLoc, false, matrixBuffer);
+            viewMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(viewLoc, false, matrixBuffer);
+            projectionMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(projLoc, false, matrixBuffer);
+            if(player.hasInventoryOpen) {
+                glDisable(GL_DEPTH_TEST);
+                glLineWidth(2.0f);
+                glUniform4f(guiColorLoc, 0.25f, 0.25f, 0.25f, 1.0f);
+                glBindVertexArray(hotbarBackgroundVao);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glBindVertexArray(0);
+                glEnable(GL_DEPTH_TEST);
+                glEnableVertexAttribArray(1);
+            }
+
+            //hotbar slots
+            modelMatrix.identity();
+            viewMatrix.identity();
+            projectionMatrix.identity().ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+
+            modelMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(modelLoc, false, matrixBuffer);
+            viewMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(viewLoc, false, matrixBuffer);
+            projectionMatrix.get(0, matrixBuffer);
+            glUniformMatrix4fv(projLoc, false, matrixBuffer);
+
+            glDisable(GL_DEPTH_TEST);
+            glLineWidth(2.0f);
+            glUniform4f(guiColorLoc, 0.55f, 0.55f, 0.55f, 1.0f);
+            glBindVertexArray(hotbarSlotsVao);
+            glDrawArrays(GL_TRIANGLES, 0, 54);
+            glBindVertexArray(0);
+            glEnable(GL_DEPTH_TEST);
+            glEnableVertexAttribArray(1);
+
+
             shader.unbind();
             glfwSwapBuffers(window);
             glfwPollEvents();
